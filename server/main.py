@@ -1,11 +1,14 @@
 """
-发送端服务器入口（增强版 - 支持智能路由）
+发送端服务器入口（增强版 - 支持智能路由、自动打开浏览器）
 """
 
 import os
 import sys
 import signal
 import argparse
+import threading
+import time as time_module
+import webbrowser
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -29,6 +32,7 @@ def main():
   %(prog)s --tunnel                           # 强制启用frp
   %(prog)s --check 192.168.1.100             # 检测目标IP
   %(prog)s --scan                             # 扫描局域网设备
+  %(prog)s --no-browser                       # 不自动打开浏览器
         """
     )
     
@@ -82,6 +86,11 @@ def main():
         action='store_true',
         help='扫描局域网内的FileP2P设备'
     )
+    parser.add_argument(
+        '--no-browser',
+        action='store_true',
+        help='不自动打开浏览器'
+    )
     
     args = parser.parse_args()
     
@@ -103,7 +112,6 @@ def main():
                 print("-" * 60)
         else:
             print("未发现其他FileP2P设备")
-        
         return
     
     # ==================== 检测模式 ====================
@@ -126,7 +134,6 @@ def main():
             print(f"  直连地址: {result.get('connection_url', 'N/A')}")
         print("=" * 60)
         print()
-        
         return
     
     # ==================== 服务器模式 ====================
@@ -189,6 +196,20 @@ def main():
             else:
                 logger.warning("自动隧道失败，仅提供局域网服务")
     
+    # ===== 自动打开浏览器 =====
+    local_url = f"http://127.0.0.1:{args.port}"
+    
+    if not args.no_browser:
+        def open_browser():
+            time_module.sleep(1.5)
+            try:
+                webbrowser.open(local_url)
+                logger.info(f"浏览器已打开: {local_url}")
+            except Exception as e:
+                logger.warning(f"无法自动打开浏览器: {e}")
+        
+        threading.Thread(target=open_browser, daemon=True).start()
+    
     # 处理退出信号
     def shutdown(signum, frame):
         logger.info("正在关闭服务...")
@@ -211,6 +232,9 @@ def main():
     print(f"  局域网地址: http://{local_ip}:{args.port}")
     print(f"  Web界面: http://{local_ip}:{args.port}")
     print(f"  共享目录: {share_dir}")
+    
+    if args.access_code:
+        print(f"  访问码: {args.access_code}")
     
     if tunnel and tunnel.get_remote_url():
         print(f"  远程地址: {tunnel.get_remote_url()}")

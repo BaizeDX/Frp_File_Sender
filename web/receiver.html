@@ -63,6 +63,13 @@
                         <option value="size">按大小排序</option>
                         <option value="modified">按时间排序</option>
                     </select>
+
+                    <div class="download-dir-selector">
+                        <span class="dir-label">📁</span>
+                        <span class="dir-path" id="download-dir-display">下载目录</span>
+                        <button class="btn btn-secondary btn-sm" onclick="changeDownloadDir()">更改</button>
+                    </div>
+                    
                     <button class="btn btn-secondary" onclick="selectAll()">全选</button>
                     <button class="btn btn-secondary" onclick="deselectAll()">取消</button>
                     <button class="btn btn-primary" onclick="downloadSelected()">下载选中</button>

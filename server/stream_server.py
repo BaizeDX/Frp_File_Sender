@@ -101,6 +101,21 @@ class StreamServer:
             with self.stats_lock:
                 self.stats['total_requests'] += 1
 
+            # ===== 访问码验证（API接口需要验证）=====
+            api_paths = ['/api/files', '/api/share', '/api/download/', '/api/stats', '/api/check']
+            needs_auth = any(path.startswith(p) for p in api_paths)
+            
+            if needs_auth and self.access_code and method == 'GET':
+                client_code = headers.get('x-access-code', '')
+                if client_code != self.access_code:
+                    # 返回401要求输入访问码
+                    self._send_json(client_socket, 401, {
+                        'error': 'Access code required',
+                        'need_access_code': True,
+                        'hint': '请在访问码输入框中输入访问码'
+                    })
+                    return
+
             # ==================== 路由 ====================
             if method == 'OPTIONS':
                 self._handle_cors(client_socket)

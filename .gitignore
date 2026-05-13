@@ -55,5 +55,4 @@ frp_*/
 test_*.bin
 test_data/
 
-files/*.exe
-*.exe
+files/

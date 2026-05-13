@@ -1,0 +1,25 @@
+# 核心依赖
+aiofiles>=23.2.1
+aiohttp>=3.10.0
+websockets>=12.0
+
+# 网络工具
+requests>=2.31.0
+urllib3>=2.1.0
+
+# GUI依赖
+tkinter-tooltip>=3.0.0
+
+# 工具库
+pyyaml>=6.0.1
+tqdm>=4.66.1
+click>=8.1.7
+
+# 加密和校验
+cryptography>=41.0.7
+
+# 开发工具
+pytest>=7.4.3
+pytest-asyncio>=0.23.2
+black>=23.12.0
+flake8>=6.1.0

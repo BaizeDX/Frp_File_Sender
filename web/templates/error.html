@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{code}} - FileP2P</title>
+    <link rel="stylesheet" href="/web/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center; padding: 100px 20px; background: var(--card-bg); border-radius: var(--radius); box-shadow: var(--shadow);">
+            <div style="font-size: 80px; margin-bottom: 20px;">
+                {{error_icon}}
+            </div>
+            <h1 style="font-size: 48px; color: var(--danger); margin-bottom: 10px;">{{code}}</h1>
+            <h2 style="margin-bottom: 20px;">{{message}}</h2>
+            <p style="color: var(--text-light); margin-bottom: 30px;">{{description}}</p>
+            <div>
+                <a href="/" class="btn btn-primary">🏠 返回首页</a>
+                <button class="btn btn-secondary" onclick="history.back()">⬅ 返回上页</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发送文件 - FileP2P</title>
+    <link rel="stylesheet" href="/web/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <a href="/" class="nav-brand">📁 FileP2P</a>
+            <div class="nav-links">
+                <a href="/">首页</a>
+                <a href="/web/sender.html" class="active">发送</a>
+                <a href="/web/receiver.html">接收</a>
+            </div>
+        </nav>
+
+        <!-- 说明区域 -->
+        <div class="upload-section" id="info-section">
+            <h2>📤 发送文件</h2>
+            
+            <div class="info-card">
+                <div class="info-icon">📂</div>
+                <h3>如何分享文件？</h3>
+                <ol class="instruction-list">
+                    <li>将需要分享的文件复制到 <code class="path-highlight">files</code> 文件夹</li>
+                    <li>点击下方"生成分享链接"按钮</li>
+                    <li>将链接发送给接收方</li>
+                </ol>
+                
+                <div class="folder-path">
+                    <span class="label">📁 文件夹路径：</span>
+                    <code id="share-dir"></code>
+                </div>
+                
+                <button class="btn btn-primary btn-large" onclick="generateShareLink()" id="share-btn">
+                    🚀 生成分享链接
+                </button>
+            </div>
+        </div>
+
+        <!-- 分享结果 -->
+        <div class="share-section" id="share-section" style="display:none">
+            <h2>🔗 分享链接已生成</h2>
+            
+            <div class="share-card">
+                <h3>📡 局域网访问</h3>
+                <div class="url-box">
+                    <input type="text" id="local-url" readonly class="url-input">
+                    <button class="btn btn-secondary" onclick="copyUrl('local-url')">复制</button>
+                </div>
+                <p class="url-hint">同一WiFi下的设备使用此地址</p>
+            </div>
+
+            <div class="share-card" id="access-code-card">
+                <h3>🔑 访问码</h3>
+                <div class="code-display" id="access-code-display"></div>
+                <p class="url-hint">接收方首次连接需要输入</p>
+            </div>
+
+            <div class="share-card">
+                <h3>📋 共享文件列表</h3>
+                <div class="file-summary" id="file-summary"></div>
+            </div>
+
+            <button class="btn btn-primary" onclick="refreshShare()">
+                🔄 刷新文件列表
+            </button>
+        </div>
+    </div>
+
+    <script src="/web/static/js/common.js"></script>
+    <script>
+        // 显示文件夹路径
+        fetch('/api/stats')
+            .then(() => {
+                // 从当前URL推断
+                const url = window.location.origin;
+                document.getElementById('share-dir').textContent = url + '/files/';
+            });
+
+        async function generateShareLink() {
+            const btn = document.getElementById('share-btn');
+            btn.textContent = '⏳ 生成中...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/share');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('info-section').style.display = 'none';
+                    document.getElementById('share-section').style.display = 'block';
+                    
+                    document.getElementById('local-url').value = data.local_url;
+                    document.getElementById('access-code-display').textContent = data.access_code || '无';
+                    
+                    // 显示文件列表
+                    const summary = document.getElementById('file-summary');
+                    if (data.files && data.files.length > 0) {
+                        summary.innerHTML = `
+                            <p>共 <strong>${data.file_count}</strong> 个文件，总大小 <strong>${formatSize(data.total_size)}</strong></p>
+                            <ul class="file-mini-list">
+                                ${data.files.map(f => `
+                                    <li>📎 ${f.name} (${formatSize(f.size)})</li>
+                                `).join('')}
+                            </ul>
+                        `;
+                    } else {
+                        summary.innerHTML = '<p style="color: #f56565;">⚠️ files 文件夹为空，请先放入文件</p>';
+                    }
+                    
+                    showToast(data.message, 'success');
+                } else {
+                    showToast(data.error || '生成失败', 'error');
+                }
+            } catch (error) {
+                showToast('请求失败: ' + error.message, 'error');
+            } finally {
+                btn.textContent = '🚀 生成分享链接';
+                btn.disabled = false;
+            }
+        }
+
+        async function refreshShare() {
+            await generateShareLink();
+        }
+    </script>
+
+    <style>
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .info-icon {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+        .instruction-list {
+            text-align: left;
+            display: inline-block;
+            margin: 20px auto;
+            font-size: 15px;
+            line-height: 2;
+        }
+        .path-highlight {
+            background: #ffeaa7;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .folder-path {
+            background: #dfe6e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .folder-path code {
+            background: #2d3436;
+            color: #55efc4;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            word-break: break-all;
+        }
+        .file-mini-list {
+            list-style: none;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .file-mini-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        .label {
+            font-weight: bold;
+        }
+    </style>
+</body>
+</html>

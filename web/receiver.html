@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接收文件 - FileP2P</title>
+    <link rel="stylesheet" href="/web/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 导航栏 -->
+        <nav class="navbar">
+            <a href="/" class="nav-brand">📁 FileP2P</a>
+            <div class="nav-links">
+                <a href="/">首页</a>
+                <a href="/web/sender.html">发送</a>
+                <a href="/web/receiver.html" class="active">接收</a>
+            </div>
+        </nav>
+
+        <!-- 连接区域 -->
+        <div class="connect-section" id="connect-section">
+            <h2>📥 连接到发送者</h2>
+            
+            <div class="connect-card">
+                <div class="smart-detect">
+                    <h3>🔍 智能检测</h3>
+                    <div class="input-group">
+                        <input type="text" id="target-ip" placeholder="输入对方IP地址自动检测连接方式">
+                        <button class="btn btn-secondary" onclick="detectConnection()">检测</button>
+                    </div>
+                    <div class="detect-result" id="detect-result"></div>
+                </div>
+
+                <div class="manual-connect">
+                    <h3>🔗 手动连接</h3>
+                    <div class="input-group">
+                        <input type="text" id="server-url" placeholder="服务器地址，例如: 192.168.1.100:8848">
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="access-code" placeholder="访问码（如果需要）">
+                    </div>
+                    <button class="btn btn-primary btn-large" onclick="connectToServer()">
+                        连接
+                    </button>
+                </div>
+
+                <div class="recent-connections" id="recent-connections" style="display:none">
+                    <h3>📋 最近连接</h3>
+                    <div class="recent-list" id="recent-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件浏览区域 -->
+        <div class="browse-section" id="browse-section" style="display:none">
+            <div class="browse-header">
+                <h2>📂 可用文件</h2>
+                <div class="browse-toolbar">
+                    <input type="text" id="search-input" placeholder="搜索文件..." class="input-search">
+                    <select id="sort-select" class="select-sort" onchange="sortFiles()">
+                        <option value="name">按名称排序</option>
+                        <option value="size">按大小排序</option>
+                        <option value="modified">按时间排序</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="selectAll()">全选</button>
+                    <button class="btn btn-secondary" onclick="deselectAll()">取消</button>
+                    <button class="btn btn-primary" onclick="downloadSelected()">下载选中</button>
+                </div>
+            </div>
+
+            <div class="file-grid" id="file-grid">
+                <!-- 动态填充文件列表 -->
+            </div>
+
+            <div class="transfer-summary" id="transfer-summary" style="display:none">
+                <div class="summary-item">
+                    <span>已选择: <strong id="selected-count">0</strong> 个文件</span>
+                </div>
+                <div class="summary-item">
+                    <span>总大小: <strong id="selected-size">0 B</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 下载进度区域 -->
+        <div class="download-section" id="download-section" style="display:none">
+            <h2>📥 下载进度</h2>
+            <div class="download-tasks" id="download-tasks">
+                <!-- 动态填充下载任务 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/web/static/js/common.js"></script>
+    <script src="/web/static/js/receiver.js"></script>
+</body>
+</html>

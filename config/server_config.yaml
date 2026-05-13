@@ -1,0 +1,39 @@
+# FileP2P 服务器配置
+
+server:
+  host: "0.0.0.0"
+  port: 8848
+  max_request_size: 65536  # 64KB
+  socket_timeout: 30
+  
+files:
+  share_directory: "./files"
+  max_file_size: null  # null表示无限制
+  allowed_extensions: []  # 空列表表示允许所有
+  
+discovery:
+  enabled: true
+  broadcast_port: 8849
+  broadcast_interval: 5  # 秒
+  device_name: ""  # 空则使用主机名
+  
+tunnel:
+  enabled: false
+  frp_server: "your-frp-server.com"
+  frp_port: 7000
+  remote_port: 6000
+  token: ""
+  
+security:
+  access_code: ""  # 空则自动生成
+  enable_encryption: true
+  
+logging:
+  level: "INFO"
+  file: "logs/server.log"
+  max_size_mb: 10
+  backup_count: 5
+  
+websocket:
+  enabled: true
+  port: 8850

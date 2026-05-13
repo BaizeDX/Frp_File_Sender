@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileP2P - 点对点文件传输</title>
+    <link rel="stylesheet" href="/web/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📁 FileP2P</h1>
+            <p class="subtitle">点对点大文件传输工具</p>
+            <p class="description">摆脱微信文件大小限制，局域网直连高速传输，远程穿透随时随地访问</p>
+        </header>
+
+        <div class="role-selection">
+            <div class="role-card" onclick="selectRole('sender')">
+                <div class="role-icon">
+                    <svg viewBox="0 0 24 24" width="64" height="64">
+                        <path fill="currentColor" d="M5,20V4H19V20H5M12,18A2,2 0 0,0 14,16A2,2 0 0,0 12,14A2,2 0 0,0 10,16A2,2 0 0,0 12,18M12,8A2,2 0 0,0 14,6A2,2 0 0,0 12,4A2,2 0 0,0 10,6A2,2 0 0,0 12,8Z"/>
+                    </svg>
+                </div>
+                <h2>📤 发送文件</h2>
+                <p>分享文件给其他人</p>
+                <ul class="feature-list">
+                    <li>拖拽上传文件</li>
+                    <li>自动生成分享链接</li>
+                    <li>局域网直连高速传输</li>
+                    <li>可选远程访问</li>
+                </ul>
+            </div>
+            
+            <div class="role-card" onclick="selectRole('receiver')">
+                <div class="role-icon">
+                    <svg viewBox="0 0 24 24" width="64" height="64">
+                        <path fill="currentColor" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
+                    </svg>
+                </div>
+                <h2>📥 接收文件</h2>
+                <p>从别人那里下载文件</p>
+                <ul class="feature-list">
+                    <li>输入链接即可连接</li>
+                    <li>浏览远程文件列表</li>
+                    <li>多文件批量下载</li>
+                    <li>断点续传支持</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="features-section">
+            <h2>✨ 核心特性</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">🚀</span>
+                    <h3>高速传输</h3>
+                    <p>局域网直连可达100MB/s</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📁</span>
+                    <h3>大文件支持</h3>
+                    <p>支持10GB+大文件传输</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔄</span>
+                    <h3>断点续传</h3>
+                    <p>中断后自动续传</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🌐</span>
+                    <h3>远程穿透</h3>
+                    <p>随时随地远程访问</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔒</span>
+                    <h3>安全加密</h3>
+                    <p>端到端加密传输</p>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📱</span>
+                    <h3>全平台支持</h3>
+                    <p>手机电脑都能用</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>FileP2P v0.1.0 | 基于Python开发 | <span id="server-status">检查服务器状态...</span></p>
+        </footer>
+    </div>
+
+    <script src="/web/static/js/common.js"></script>
+    <script>
+        // 检查服务器状态
+        fetch('/api/stats')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('server-status').textContent = 
+                    `服务器运行中 | 已处理 ${data.total_requests} 个请求`;
+            })
+            .catch(() => {
+                document.getElementById('server-status').textContent = 
+                    '服务器连接失败';
+            });
+        
+        function selectRole(role) {
+            if (role === 'sender') {
+                window.location.href = '/web/sender.html';
+            } else {
+                window.location.href = '/web/receiver.html';
+            }
+        }
+    </script>
+</body>
+</html>

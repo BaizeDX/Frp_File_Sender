@@ -33,7 +33,7 @@ class StreamServer:
         self.host = host
         self.port = port
         self.share_dir = os.path.abspath(share_dir)
-        self.access_code = access_code or generate_access_code()
+        self.access_code = access_code  # None表示不需要访问码
         self.max_request_size = max_request_size
         self.running = False
         self.server_socket = None
@@ -77,8 +77,6 @@ class StreamServer:
     # ==================== 核心处理 ====================
 
     def _handle_client(self, client_socket, client_addr):
-        client_ip = client_addr[0]
-
         try:
             request_data = self._recv_http_request(client_socket)
             if not request_data:
@@ -96,25 +94,34 @@ class StreamServer:
             path = unquote(parsed.path)
             headers = self._parse_headers(request_data)
 
+            body_str = ''
+            if '\r\n\r\n' in request_data:
+                body_str = request_data.split('\r\n\r\n', 1)[1]
+
             self.logger.info(f"{client_addr} | {method} {path}")
 
             with self.stats_lock:
                 self.stats['total_requests'] += 1
 
-            # ===== 访问码验证（API接口需要验证）=====
-            api_paths = ['/api/files', '/api/share', '/api/download/', '/api/stats', '/api/check']
-            needs_auth = any(path.startswith(p) for p in api_paths)
-            
-            if needs_auth and self.access_code and method == 'GET':
-                client_code = headers.get('x-access-code', '')
-                if client_code != self.access_code:
-                    # 返回401要求输入访问码
-                    self._send_json(client_socket, 401, {
-                        'error': 'Access code required',
-                        'need_access_code': True,
-                        'hint': '请在访问码输入框中输入访问码'
-                    })
-                    return
+            # ===== 判断是否本机访问 =====
+            client_ip = client_addr[0]
+            is_local = client_ip in ('127.0.0.1', '::1', 'localhost') or client_ip.startswith('192.168.')
+
+            # ===== 访问码验证 =====
+            # 本机访问、Web页面、静态资源 → 不需要验证
+            # 外部访问 API/下载 → 需要验证
+            if self.access_code and not is_local:
+                public_prefixes = ['/web/', '/static/', '/favicon']
+                is_public = path in ('/', '', '/index.html') or any(path.startswith(p) for p in public_prefixes)
+                
+                if not is_public:
+                    client_code = headers.get('x-access-code', '')
+                    if client_code != self.access_code:
+                        self._send_json(client_socket, 401, {
+                            'error': 'Access code required',
+                            'need_access_code': True
+                        })
+                        return
 
             # ==================== 路由 ====================
             if method == 'OPTIONS':
@@ -125,6 +132,8 @@ class StreamServer:
                 self._handle_file_list(client_socket)
             elif path == '/api/share':
                 self._handle_share(client_socket)
+            elif path == '/api/set-access-code' and method == 'POST':
+                self._handle_set_access_code(client_socket, body_str)
             elif path.startswith('/api/download/'):
                 self._handle_download(client_socket, path, headers)
             elif path == '/api/stats':
@@ -152,6 +161,7 @@ class StreamServer:
         data = b''
         client_socket.settimeout(5)
         try:
+            # 读头部
             while b'\r\n\r\n' not in data:
                 chunk = client_socket.recv(4096)
                 if not chunk:
@@ -159,6 +169,31 @@ class StreamServer:
                 data += chunk
                 if len(data) > self.max_request_size:
                     break
+
+            if b'\r\n\r\n' not in data:
+                return data.decode('utf-8', errors='replace')
+
+            # 读body
+            header_end = data.find(b'\r\n\r\n') + 4
+            headers_str = data[:header_end].decode('utf-8', errors='replace')
+            content_length = 0
+            for line in headers_str.split('\r\n'):
+                if line.lower().startswith('content-length:'):
+                    try:
+                        content_length = int(line.split(':')[1].strip())
+                    except:
+                        pass
+
+            body_received = len(data) - header_end
+            remaining = content_length - body_received
+
+            while remaining > 0:
+                chunk = client_socket.recv(min(4096, remaining))
+                if not chunk:
+                    break
+                data += chunk
+                remaining -= len(chunk)
+
         except socket.timeout:
             pass
         finally:
@@ -179,7 +214,6 @@ class StreamServer:
     # ==================== API 处理 ====================
 
     def _handle_file_list(self, client_socket):
-        """返回文件列表"""
         files = []
         try:
             for filename in os.listdir(self.share_dir):
@@ -199,28 +233,22 @@ class StreamServer:
         response = json.dumps({
             'files': files,
             'server': 'FileP2P-StreamServer',
-            'access_code': self.access_code
+            'has_access_code': bool(self.access_code),
         }, ensure_ascii=False)
         self._send_json(client_socket, 200, response)
 
     def _handle_share(self, client_socket):
-        """生成分享链接 - 扫描files文件夹"""
         try:
             files = []
             total_size = 0
-
             for filename in os.listdir(self.share_dir):
                 filepath = os.path.join(self.share_dir, filename)
                 if os.path.isfile(filepath):
                     stat = os.stat(filepath)
-                    files.append({
-                        'name': filename,
-                        'size': stat.st_size,
-                    })
+                    files.append({'name': filename, 'size': stat.st_size})
                     total_size += stat.st_size
 
             local_ip = get_local_ip()
-
             self._send_json(client_socket, 200, {
                 'success': True,
                 'message': f'共 {len(files)} 个文件，{self._format_size(total_size)}',
@@ -229,14 +257,59 @@ class StreamServer:
                 'total_size': total_size,
                 'local_url': f'http://{local_ip}:{self.port}',
                 'access_code': self.access_code,
+                'has_access_code': bool(self.access_code),
             })
-
         except Exception as e:
             self.logger.error(f"生成分享链接错误: {e}")
             self._send_json(client_socket, 500, {'error': str(e)})
 
+    def _handle_set_access_code(self, client_socket, body_str):
+        """设置/清除/生成访问码"""
+        try:
+            data = json.loads(body_str) if body_str else {}
+            action = data.get('action', 'generate')
+
+            if action == 'clear':
+                self.access_code = None
+                self.logger.info("访问码已清除")
+                self._send_json(client_socket, 200, {
+                    'success': True,
+                    'access_code': None,
+                    'has_access_code': False,
+                    'message': '访问码已清除'
+                })
+            elif action == 'set':
+                code = data.get('code', '').strip().upper()
+                if not code:
+                    self._send_json(client_socket, 400, {'error': '访问码不能为空'})
+                    return
+                self.access_code = code
+                self.logger.info(f"访问码已设置: {code}")
+                self._send_json(client_socket, 200, {
+                    'success': True,
+                    'access_code': code,
+                    'has_access_code': True,
+                    'message': f'访问码已设置为: {code}'
+                })
+            elif action == 'generate':
+                self.access_code = generate_access_code()
+                self.logger.info(f"已生成随机访问码: {self.access_code}")
+                self._send_json(client_socket, 200, {
+                    'success': True,
+                    'access_code': self.access_code,
+                    'has_access_code': True,
+                    'message': f'已生成随机访问码: {self.access_code}'
+                })
+            else:
+                self._send_json(client_socket, 400, {'error': f'未知操作: {action}'})
+
+        except json.JSONDecodeError:
+            self._send_json(client_socket, 400, {'error': '无效的JSON'})
+        except Exception as e:
+            self.logger.error(f"设置访问码错误: {e}")
+            self._send_json(client_socket, 500, {'error': str(e)})
+
     def _handle_download(self, client_socket, path, headers):
-        """流式下载文件"""
         filename = path[len('/api/download/'):]
         is_safe, filepath = validate_file_path(self.share_dir, filename)
         if not is_safe:
@@ -305,13 +378,11 @@ class StreamServer:
                 self.stats['active_transfers'] -= 1
 
     def _handle_stats(self, client_socket):
-        """服务器统计"""
         with self.stats_lock:
             stats = self.stats.copy()
         self._send_json(client_socket, 200, json.dumps(stats))
 
     def _handle_network_check(self, client_socket, raw_path):
-        """网络检测"""
         target_ip = None
         if '?' in raw_path:
             query_string = raw_path.split('?')[1].split(' ')[0]

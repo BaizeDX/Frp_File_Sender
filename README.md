@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**FileP2P** 是一个基于 Python 的点对点大文件传输工具，专为解决微信/QQ 等聊天软件的文件大小限制而设计。支持局域网高速直连和 frp 远程穿透访问。
+**FileP2P** 是一个基于 Python 的点对点大文件传输工具，专为解决微信/QQ 等聊天软件的文件大小限制而设计。支持局域网高速直连和 frp 远程穿透访问。本项目为计算机网络作业的课外扩展，由GenAI辅助完成，不具备任何专业性！~~其实更多作为增加MC联机时购买的内网穿透服务的费效比的副产品（（~~
 
 ## ✨ 功能特性
 
@@ -143,7 +143,7 @@ http://192.168.1.100:8848
 
 ---
 
-### 访问码保护
+### ~~访问码保护~~（此功能尚不完善，请发送方先不要设置访问码！）
 
 #### 发送方设置
 | 操作 | 步骤 |
@@ -342,7 +342,8 @@ MIT License
 
 ---
 
-## 🙏 致谢
+## 🙏 注意事项
 
-- 本项目计算机网络课程作业的延伸项目
-- frp 内网穿透由 [fatedier/frp](https://github.com/fatedier/frp) 提供支持
+- 本项目计算机网络课程作业的延伸项目，常态可以支持同局域网内无线传输文件，跨局域网需要内网穿透
+- frp 需要自行寻找付费或免费服务，目前测试可以正常使用Sakura Frp
+- 目前只测试过Windows环境，Linux和macOS尚未测试稳定性
